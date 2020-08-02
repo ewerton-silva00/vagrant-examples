@@ -1,0 +1,36 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+file_to_disk_01 = './second_disk.vdi'
+file_to_disk_02 = './third_disk.vdi'
+
+Vagrant.configure("2") do |config|
+
+  config.vm.define "centos-multi-disk" do |centos|
+    centos.vm.box = "centos-base-image"
+    centos.vm.box_version = "20200225.0.0"
+    centos.vm.box_url = "file:///data/Backup/Vagrant/Boxes/centos-base-image/centos-base-image.json"
+    centos.vm.box_check_update = true
+    centos.vm.hostname = "centos-multi-disk"
+    centos.vm.network "private_network", ip: "10.10.10.10"
+
+    centos.vbguest.auto_update = false
+
+    centos.vm.provider "virtualbox" do |vb|
+      vb.name = "vagrant-centos-multi-disk"
+      vb.gui = false
+      vb.cpus = 1
+      vb.memory = 1024
+      # --- Add second disk with 10GB.
+      vb.customize ['createhd', '--filename', file_to_disk_01, '--size', 10 * 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', file_to_disk_01]
+      # --- Add third disk with 10GB.
+      vb.customize ['createhd', '--filename', file_to_disk_02, '--size', 10 * 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', file_to_disk_02]      
+    end
+
+    centos.vm.provision "shell", inline: <<-SHELL
+      hostnamectl
+    SHELL
+  end
+end
